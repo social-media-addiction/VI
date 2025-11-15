@@ -2,6 +2,27 @@ import React, { useEffect, useState } from "react";
 import * as d3 from "d3";
 import { loadStudentData, generateInsights, StudentRecord, Insights } from "../data/data";
 import Aurora from "../components/Aurora"; // <-- 1. Import Aurora
+import WorldMap from "../components/WorldMap";
+import { feature, mesh } from "topojson-client";
+import type { FeatureCollection, Geometry } from "geojson";
+
+// Load and parse the world map data.
+const worldData = await d3.json(
+  "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json"
+) as any;
+
+// Countries (filled shapes)
+const countriesData = feature(
+  worldData,
+  worldData.objects.countries
+) as unknown as FeatureCollection<Geometry, { name: string }>;
+
+// Mesh (borders only)
+const countryMeshData = mesh(
+  worldData,
+  worldData.objects.countries,
+  (a, b) => a !== b
+);
 
 const InterestingFinds: React.FC = () => {
   const [data, setData] = useState<StudentRecord[]>([]);
@@ -30,10 +51,10 @@ const InterestingFinds: React.FC = () => {
   const lightText = "#e5e7eb"; // text-gray-200
 
   const renderAxis = (xScale: any, yScale: any, xLabel: string, yLabel: string, xType: 'band' | 'linear' = 'linear') => {
-    const xAxis = xType === 'band' 
+    const xAxis = xType === 'band'
       ? d3.axisBottom(xScale)
       : d3.axisBottom(xScale).ticks(5);
-    
+
     const yAxis = d3.axisLeft(yScale).ticks(5);
 
     return (
@@ -41,7 +62,7 @@ const InterestingFinds: React.FC = () => {
         {/* X Axis */}
         <g
           transform={`translate(0, ${height - margin.bottom})`}
-          ref={node => { 
+          ref={node => {
             if (node) {
               d3.select(node)
                 .call(xAxis as any)
@@ -57,7 +78,7 @@ const InterestingFinds: React.FC = () => {
         {/* Y Axis */}
         <g
           transform={`translate(${margin.left}, 0)`}
-          ref={node => { 
+          ref={node => {
             if (node) {
               d3.select(node)
                 .call(yAxis as any)
@@ -98,10 +119,10 @@ const InterestingFinds: React.FC = () => {
   const mentalHealthXScale = d3.scaleLinear().domain(d3.extent(insights.mentalHealthByUsage.map(d => d.usage)) as [number, number]).range([margin.left, width - margin.right]);
   const mentalHealthYScale = d3.scaleLinear().domain(d3.extent(insights.mentalHealthByUsage.map(d => d.mentalHealth)) as [number, number]).range([height - margin.bottom, margin.top]);
 
-  const academicPie = d3.pie<{key: string, value: number}>().value(d => d.value);
+  const academicPie = d3.pie<{ key: string, value: number }>().value(d => d.value);
   const academicData = [
-    {key: 'Yes', value: insights.academicImpact.yes},
-    {key: 'No', value: insights.academicImpact.no}
+    { key: 'Yes', value: insights.academicImpact.yes },
+    { key: 'No', value: insights.academicImpact.no }
   ];
   const academicArc: any = d3.arc().innerRadius(0).outerRadius(Math.min(width, height) / 3);
 
@@ -132,7 +153,7 @@ const InterestingFinds: React.FC = () => {
 
       {/* --- 3. Add z-10 Content Wrapper --- */}
       <div className="relative z-10 p-6 max-w-7xl mx-auto font-sans">
-        
+
         {/* Key Metrics */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
           {/* --- 4. Restyle Cards --- */}
@@ -159,11 +180,22 @@ const InterestingFinds: React.FC = () => {
         </div>
 
         {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
+          <div className={cardStyle}>
+            <h3 className="text-xl font-semibold mb-4 text-teal-300">Country Distribution</h3>
+            <div className="mx-auto max-w-4xl">
+            <WorldMap
+              countries={countriesData}
+              countrymesh={countryMeshData}
+              studentData={data}
+            />
+             </div>
+          </div>
+
 
           {/* Gender Distribution */}
           <div className={cardStyle}>
-            <h3 className="text-xl font-semibold mb-4 text-teal-300">👥 Gender Distribution</h3>
+            <h3 className="text-xl font-semibold mb-4 text-teal-300">Gender Distribution</h3>
             <svg width={width} height={height} className="mx-auto">
               {genderData.map(([gender, count]) => (
                 <g key={gender}>
@@ -193,7 +225,7 @@ const InterestingFinds: React.FC = () => {
 
           {/* Platform Distribution */}
           <div className={cardStyle}>
-            <h3 className="text-xl font-semibold mb-4 text-teal-300">📱 Platform Popularity</h3>
+            <h3 className="text-xl font-semibold mb-4 text-teal-300">Platform Popularity</h3>
             <svg width={width} height={height} className="mx-auto">
               {platformData.map(([platform, count]) => (
                 <g key={platform}>
@@ -223,7 +255,7 @@ const InterestingFinds: React.FC = () => {
 
           {/* Usage by Age */}
           <div className={cardStyle}>
-            <h3 className="text-xl font-semibold mb-4 text-teal-300">📈 Usage by Age</h3>
+            <h3 className="text-xl font-semibold mb-4 text-teal-300">Usage by Age</h3>
             <svg width={width} height={height} className="mx-auto">
               <path
                 d={ageLine(ageData) || ""}
@@ -251,7 +283,7 @@ const InterestingFinds: React.FC = () => {
 
           {/* Mental Health vs Usage */}
           <div className={cardStyle}>
-            <h3 className="text-xl font-semibold mb-4 text-teal-300">🧠 Mental Health vs Usage</h3>
+            <h3 className="text-xl font-semibold mb-4 text-teal-300">Mental Health vs Usage</h3>
             <svg width={width} height={height} className="mx-auto">
               {insights.mentalHealthByUsage.map((d, i) => (
                 <circle
@@ -273,9 +305,9 @@ const InterestingFinds: React.FC = () => {
 
           {/* Academic Impact */}
           <div className={cardStyle}>
-            <h3 className="text-xl font-semibold mb-4 text-teal-300">🎓 Academic Impact</h3>
+            <h3 className="text-xl font-semibold mb-4 text-teal-300">Academic Impact</h3>
             <svg width={width} height={height} className="mx-auto">
-              <g transform={`translate(${width/2}, ${height/2})`}>
+              <g transform={`translate(${width / 2}, ${height / 2})`}>
                 {academicPie(academicData).map((slice, i) => (
                   <g key={i}>
                     <path
@@ -294,7 +326,7 @@ const InterestingFinds: React.FC = () => {
                   </g>
                 ))}
               </g>
-              <text x={width/2} y={height - 20} textAnchor="middle" fontSize={14} fill={lightText} fontWeight="500">
+              <text x={width / 2} y={height - 20} textAnchor="middle" fontSize={14} fill={lightText} fontWeight="500">
                 Total: {data.length} students
               </text>
             </svg>
@@ -302,7 +334,7 @@ const InterestingFinds: React.FC = () => {
 
           {/* Sleep vs Addiction */}
           <div className={cardStyle}>
-            <h3 className="text-xl font-semibold mb-4 text-teal-300">😴 Sleep vs Addiction</h3>
+            <h3 className="text-xl font-semibold mb-4 text-teal-300">Sleep vs Addiction</h3>
             <svg width={width} height={height} className="mx-auto">
               {insights.sleepVsAddiction.map((d, i) => (
                 <circle
@@ -324,7 +356,7 @@ const InterestingFinds: React.FC = () => {
 
           {/* Relationship Status */}
           <div className={cardStyle}>
-            <h3 className="text-xl font-semibold mb-4 text-teal-300">💕 Relationship Status</h3>
+            <h3 className="text-xl font-semibold mb-4 text-teal-300">Relationship Status</h3>
             <svg width={width} height={height} className="mx-auto">
               {relationshipData.map(([status, count]) => (
                 <g key={status}>
@@ -354,7 +386,7 @@ const InterestingFinds: React.FC = () => {
 
           {/* Age Distribution */}
           <div className={cardStyle}>
-            <h3 className="text-xl font-semibold mb-4 text-teal-300">👥 Age Distribution</h3>
+            <h3 className="text-xl font-semibold mb-4 text-teal-300">Age Distribution</h3>
             <svg width={width} height={height} className="mx-auto">
               {ageDistData.map(([age, count]) => (
                 <g key={age}>
@@ -386,7 +418,7 @@ const InterestingFinds: React.FC = () => {
 
         {/* Additional Insights */}
         <div className={`mt-8 ${cardStyle}`}>
-          <h2 className="text-2xl font-semibold mb-4 text-teal-300">📋 Key Insights</h2>
+          <h2 className="text-2xl font-semibold mb-4 text-teal-300">Key Insights</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-200">
             <div>
               <h4 className="font-semibold mb-3 text-lg text-teal-200">Usage Patterns</h4>

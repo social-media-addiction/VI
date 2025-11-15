@@ -1,0 +1,220 @@
+import * as d3 from "d3";
+import React, { useEffect, useRef, useState } from "react";
+import { StudentRecord } from "../data/data";
+
+interface WorldMapProps {
+  countries: any;
+  countrymesh: any;
+  studentData: StudentRecord[];
+  onCountrySelect?: (country: string, value: number | undefined) => void;
+}
+
+// Dataset (key) -> Map_Name (value)
+const countryNameMapping = new Map<string, string>([
+  ["USA", "United States of America"],
+  ["UK", "United Kingdom"],
+  ["South Korea", "Republic of Korea"],
+  ["Bosnia", "Bosnia and Herzegovina"],
+  ["Czech Republic", "Czechia"],
+  ["UAE", "United Arab Emirates"],
+  ["Syria", "Syrian Arab Republic"],
+  ["Trinidad", "Trinidad and Tobago"],
+  ["Vatican City", "Vatican"]
+]);
+
+function getMappedCountryName(datasetCountryName: string): string {
+  return countryNameMapping.get(datasetCountryName) || datasetCountryName; // return mapped name or original if not found
+}
+
+const METRIC_OPTIONS = [
+  { key: "Addicted_Score", label: "Addiction Score" },
+  { key: "Avg_Daily_Usage_Hours", label: "Daily Usage (hours)" },
+  { key: "Sleep_Hours_Per_Night", label: "Sleep (hours)" },
+  { key: "Mental_Health_Score", label: "Mental Health Score" }
+];
+
+function aggregateByCountry(data: StudentRecord[], metric: keyof StudentRecord) {
+  return new Map(
+    d3.rollup(
+      data,
+      v => d3.mean(v, d => Number(d[metric])) ?? 0,
+      d => getMappedCountryName(d.Country)
+    )
+  );
+}
+
+const WorldMap: React.FC<WorldMapProps> = ({ countries, countrymesh, studentData, onCountrySelect }) => {
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const [metric, setMetric] = useState<keyof StudentRecord>("Addicted_Score");
+  const valuemap = aggregateByCountry(studentData, metric);
+
+  useEffect(() => {
+    if (!svgRef.current || !containerRef.current) return;
+
+    const width = 928;
+    const marginTop = 40;
+    const height = width / 2 + marginTop;
+
+    const values = Array.from(valuemap.values());
+    const [minVal, maxVal] = d3.extent(values) as [number, number];
+
+    const color = d3.scaleSequential([minVal, maxVal], d3.interpolateRgb("#521db9", "#00e8a2"));
+
+    const projection = d3.geoEqualEarth().fitExtent([[2, marginTop + 2], [width - 2, height]], { type: "Sphere" });
+    const path = d3.geoPath(projection);
+
+    const svg = d3.select(svgRef.current);
+    svg.selectAll("*").remove();
+
+    svg
+      .attr("width", width)
+      .attr("height", height + 80)
+      .attr("viewBox", `0 0 ${width} ${height + 80}`)
+      .style("max-width", "100%")
+      .style("height", "auto")
+      .style("background", "transparent");
+
+    // GROUP for zoom/pan
+    const svgGroup = svg.append("g");
+
+    // SPHERE (invisible)
+    svgGroup.append("path").datum({ type: "Sphere" }).attr("fill", "none").attr("stroke", "none").attr("d", path as any);
+
+    // COUNTRIES
+    const countryPaths = svgGroup.append("g").selectAll("path")
+      .data(countries.features)
+      .join("path")
+      .attr("fill", (d: any) => {
+        const v = valuemap.get(d.properties.name);
+        return v != null ? color(v) : "#cccccc";
+      })
+      .attr("stroke", "#222")
+      .attr("stroke-width", 0.35)
+      .attr("d", path as any)
+      .style("cursor", "pointer")
+      .on("click", (_, d: any) => {
+        const name = d.properties.name;
+        const val = valuemap.get(name);
+        onCountrySelect?.(name, val);
+      });
+
+    // MESH
+    svgGroup.append("path")
+      .datum(countrymesh)
+      .attr("fill", "none")
+      .attr("stroke", "white")
+      .attr("stroke-width", 0.4)
+      .attr("d", path as any);
+
+    // TOOLTIP
+    const tooltipDiv = d3.select(containerRef.current)
+      .append("div")
+      .attr("class", "tooltip")
+      .style("position", "absolute")
+      .style("pointer-events", "none")
+      .style("background", "rgba(0,0,0,0.75)")
+      .style("color", "white")
+      .style("padding", "5px 10px")
+      .style("border-radius", "4px")
+      .style("font-size", "12px")
+      .style("display", "none");
+
+    countryPaths
+      .on("mouseenter", (event, d: any) => {
+        const val = valuemap.get(d.properties.name);
+        tooltipDiv
+          .style("display", "block")
+          .html(`<b>${d.properties.name}</b><br>${METRIC_OPTIONS.find(m => m.key === metric)?.label}: ${val?.toFixed(1) ?? "No data"}`);
+      })
+      .on("mousemove", (event) => {
+        // d3.pointer(event) retorna um array: [x, y]
+        const [x, y] = d3.pointer(event);
+
+        tooltipDiv
+          .style("left", x + 3 + "px")
+          .style("top", y + 3 + "px");
+      })
+      .on("mouseleave", () => {
+        tooltipDiv.style("display", "none");
+      });
+
+    // ZOOM + PAN with scroll and drag
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([1, 5])
+      .on("zoom", (e) => {
+        svgGroup.attr("transform", e.transform);
+      });
+
+    svg.call(zoom);
+
+    // LEGEND
+    const legendWidth = 300;
+    const legendHeight = 12;
+    const legendGroup = svg.append("g")
+      .attr("transform", `translate(${(width - legendWidth) / 2}, ${height + 25})`);
+
+    const defs = svg.append("defs");
+    const gradient = defs.append("linearGradient")
+      .attr("id", "legend-gradient")
+      .attr("x1", "0%").attr("x2", "100%");
+
+    const steps = 10;
+    d3.range(steps).forEach(i => {
+      gradient.append("stop")
+        .attr("offset", `${(i / (steps - 1)) * 100}%`)
+        .attr("stop-color", color(minVal + (i / (steps - 1)) * (maxVal - minVal)));
+    });
+
+    legendGroup.append("rect")
+      .attr("width", legendWidth)
+      .attr("height", legendHeight)
+      .style("fill", "url(#legend-gradient)")
+      .style("stroke", "white")
+      .style("stroke-width", 0.5)
+      .attr("rx", 4)
+      .attr("ry", 4);
+
+    legendGroup.append("text")
+      .attr("x", 0).attr("y", legendHeight + 16)
+      .attr("fill", "white")
+      .attr("font-size", 12)
+      .text(minVal.toFixed(1));
+
+    legendGroup.append("text")
+      .attr("x", legendWidth).attr("y", legendHeight + 16)
+      .attr("fill", "white")
+      .attr("text-anchor", "end")
+      .attr("font-size", 12)
+      .text(maxVal.toFixed(1));
+
+    legendGroup.append("text")
+      .attr("x", legendWidth / 2).attr("y", -6)
+      .attr("text-anchor", "middle")
+      .attr("fill", "white")
+      .attr("font-size", 13)
+      .text(`Scale: ${METRIC_OPTIONS.find(m => m.key === metric)?.label}`);
+
+  }, [valuemap, countries, countrymesh, metric]);
+
+  return (
+    <div ref={containerRef} className="w-full relative">
+      <div className="mb-4">
+        <label className="text-sm text-white mr-3">Select metric:</label>
+        <select
+          className="bg-[#3b254f] text-white p-2 rounded border border-gray-600"
+          value={metric}
+          onChange={(e) => setMetric(e.target.value as keyof StudentRecord)}
+        >
+          {METRIC_OPTIONS.map((m) => (
+            <option key={m.key} value={m.key}>{m.label}</option>
+          ))}
+        </select>
+      </div>
+      <svg ref={svgRef}></svg>
+    </div>
+  );
+};
+
+export default WorldMap;

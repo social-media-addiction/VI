@@ -52,6 +52,10 @@ export const loadStudentData = async (path: string): Promise<StudentRecord[]> =>
   }));
 };
 
+export const get_countries = (data: StudentRecord[]): string[] => {
+  return Array.from(new Set(data.map(d => d.Country))).sort();
+}
+
 export const generateInsights = (data: StudentRecord[]): Insights => {
   const avgUsage = d3.mean(data, (d) => d.Avg_Daily_Usage_Hours) ?? 0;
   const avgSleep = d3.mean(data, (d) => d.Sleep_Hours_Per_Night) ?? 0;
