@@ -5,6 +5,7 @@ import Aurora from "../components/Aurora";
 import BoxPlot, { BoxPlotData } from '../components/BoxPlot';
 import ChartContainer from '../components/ChartContainer';
 import BarChart, { BarChartData } from '../components/BarChart';
+import WorldMap from "../components/WorldMap";
 
 const AnalyzeData: React.FC = () => {
   const [data, setData] = useState<StudentRecord[]>([]);
@@ -21,7 +22,7 @@ const AnalyzeData: React.FC = () => {
     if (data.length === 0) return [];
 
     const groupedData = d3.group(data, d => d[boxPlotGrouping]);
-    
+
     return Array.from(groupedData, ([key, group]) => {
       const values = group.map(d => d.Avg_Daily_Usage_Hours).sort(d3.ascending);
       const q1 = d3.quantile(values, 0.25)!;
@@ -30,7 +31,7 @@ const AnalyzeData: React.FC = () => {
       const interQuantileRange = q3 - q1;
       const min = Math.max(0, q1 - 1.5 * interQuantileRange);
       const max = Math.min(d3.max(values)!, q3 + 1.5 * interQuantileRange);
-      
+
       return { key: String(key), values: { q1, median, q3, min, max } };
     });
   }, [data, boxPlotGrouping]);
@@ -63,8 +64,8 @@ const AnalyzeData: React.FC = () => {
       </div>
       <div className="relative z-10 container mx-auto px-4 py-8">
         <ChartContainer title="Usage by Demographics (Box Plot)" className="mt-8">
-          <select 
-            onChange={(e) => setBoxPlotGrouping(e.target.value as keyof StudentRecord)} 
+          <select
+            onChange={(e) => setBoxPlotGrouping(e.target.value as keyof StudentRecord)}
             value={boxPlotGrouping}
             className="bg-gray-700 text-white p-2 rounded mb-4"
           >
@@ -75,8 +76,8 @@ const AnalyzeData: React.FC = () => {
           <BoxPlot data={boxPlotData} yMax={yMax} />
         </ChartContainer>
         <ChartContainer title="Count by Demographics (Bar Chart)" className="mt-8">
-          <select 
-            onChange={(e) => setBarChartGrouping(e.target.value as keyof StudentRecord)} 
+          <select
+            onChange={(e) => setBarChartGrouping(e.target.value as keyof StudentRecord)}
             value={barChartGrouping}
             className="bg-gray-700 text-white p-2 rounded mb-4"
           >
@@ -85,6 +86,11 @@ const AnalyzeData: React.FC = () => {
             ))}
           </select>
           <BarChart data={barChartData} />
+        </ChartContainer>
+        <ChartContainer title="Metric by Demographics (Country Map)" className="mt-8 mx-auto">
+          <WorldMap
+            studentData={data}
+          />
         </ChartContainer>
       </div>
     </div>

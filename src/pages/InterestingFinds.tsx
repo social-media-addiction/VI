@@ -2,27 +2,6 @@ import React, { useEffect, useState } from "react";
 import * as d3 from "d3";
 import { loadStudentData, generateInsights, StudentRecord, Insights } from "../data/data";
 import Aurora from "../components/Aurora"; // <-- 1. Import Aurora
-import WorldMap from "../components/WorldMap";
-import { feature, mesh } from "topojson-client";
-import type { FeatureCollection, Geometry } from "geojson";
-
-// Load and parse the world map data.
-const worldData = await d3.json(
-  "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json"
-) as any;
-
-// Countries (filled shapes)
-const countriesData = feature(
-  worldData,
-  worldData.objects.countries
-) as unknown as FeatureCollection<Geometry, { name: string }>;
-
-// Mesh (borders only)
-const countryMeshData = mesh(
-  worldData,
-  worldData.objects.countries,
-  (a, b) => a !== b
-);
 
 const InterestingFinds: React.FC = () => {
   const [data, setData] = useState<StudentRecord[]>([]);
@@ -144,11 +123,7 @@ const InterestingFinds: React.FC = () => {
     // --- 2. Add Main BG and Aurora ---
     <div className="relative min-h-screen pt-20 text-white bg-gradient-to-b from-[#1a0d26] via-[#2a1a3a] to-[#1a0d26] overflow-x-hidden">
       <div className="absolute inset-0 z-0 pointer-events-none">
-        <Aurora
-          blend={1.0}
-          amplitude={1.2}
-          speed={2}
-        />
+        <Aurora blend={0.5} amplitude={1.2} speed={0.5} />
       </div>
 
       {/* --- 3. Add z-10 Content Wrapper --- */}
@@ -181,18 +156,6 @@ const InterestingFinds: React.FC = () => {
 
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
-          <div className={cardStyle}>
-            <h3 className="text-xl font-semibold mb-4 text-teal-300">Country Distribution</h3>
-            <div className="mx-auto max-w-4xl">
-            <WorldMap
-              countries={countriesData}
-              countrymesh={countryMeshData}
-              studentData={data}
-            />
-             </div>
-          </div>
-
-
           {/* Gender Distribution */}
           <div className={cardStyle}>
             <h3 className="text-xl font-semibold mb-4 text-teal-300">Gender Distribution</h3>
