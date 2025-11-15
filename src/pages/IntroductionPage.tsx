@@ -1,4 +1,15 @@
-// Data for the 'Key Variables' table
+import { motion } from "framer-motion";
+import { useInView } from "react-intersection-observer";
+import Aurora from "../components/Aurora";
+import {
+  FaInstagram,
+  FaFacebook,
+  FaTiktok,
+  FaTwitter,
+  FaYoutube,
+  FaLinkedin,
+} from "react-icons/fa";
+
 const keyVariables = [
   { variable: "Student_ID", type: "Integer", description: "Unique respondent identifier" },
   { variable: "Age", type: "Integer", description: "Age in years" },
@@ -11,186 +22,273 @@ const keyVariables = [
   { variable: "Sleep_Hours_Per_Night", type: "Float", description: "Average nightly sleep hours" },
   { variable: "Mental_Health_Score", type: "Integer", description: "Self-rated mental health (1 = poor to 10 = excellent)" },
   { variable: "Relationship_Status", type: "Categorical", description: "Single / In Relationship / Complicated" },
-  { variable: "Conflicts_Over_Social_Media", type: "Integer", description: "Number of relationship conflicts due to social media" },
+  { variable: "Conflicts_Over_Social_Media", type: "Integer", description: "Number of conflicts due to social media" },
   { variable: "Addicted_Score", type: "Integer", description: "Social Media Addiction Score (1 = low to 10 = high)" },
 ];
 
-// Helper component for the placeholder illustration
-const IntroIllustration = () => (
-<img
-  src="https://thumbs.dreamstime.com/b/teenager-people-having-fun-using-smartphones-millenial-community-sharing-content-social-media-network-mobile-smart-phones-139999088.jpg"
-  alt=""
-  className="rounded-lg"
-/>
+// --- 2. DEFINE THE ICONS WE'LL USE ---
+// We use two shuffled arrays for visual variety
+const logos1 = [
+  FaInstagram,
+  FaFacebook,
+  FaTiktok,
+  FaTwitter,
+  FaYoutube,
+  FaLinkedin,
+];
+const logos2 = [
+  FaYoutube,
+  FaLinkedin,
+  FaTiktok,
+  FaInstagram,
+  FaFacebook,
+  FaTwitter,
+];
 
-);
 
-// We use this font to match the handwritten style in your mockups
-const titleFont = { fontFamily: 'Comic Sans MS, cursive, sans-serif' };
+const LogoTicker = ({
+  icons,
+  duration = 50,
+  direction = "left",
+}: {
+  icons: React.ElementType[];
+  duration?: number;
+  direction?: "left" | "right";
+}) => {
+  const initialX = direction === "left" ? "0%" : "-50%";
+  const animateX = direction === "left" ? "-50%" : "0%";
 
-function IntroductionPage() {
   return (
-    // THE FIX IS HERE: `pt-16` adds top padding to offset the navbar.
-    // A standard DaisyUI navbar is h-16 (64px).
-    // If your navbar is taller, you might need `pt-20` (80px).
-    <div data-theme="light" className="min-h-screen bg-base-200 text-base-content pt-16">
-      
-      {/* 1. Hero Section (from Mockup 1 Title) */}
-      <div className="hero min-h-[350px] bg-primary text-primary-content shadow-lg">
-        <div className="hero-content text-center">
-          <div className="max-w-2xl">
-            <h1 className="text-5xl md:text-6xl font-bold" style={titleFont}>
-              Students' Social Media Addiction
-            </h1>
-            <p className="py-6 text-lg md:text-xl font-medium">
-              A Cross-Country Survey of Usage Patterns, Academic Impact, and Relationship
-            </p>
-          </div>
+    <motion.div
+      className="flex w-max"
+      initial={{ x: initialX }}
+      animate={{ x: animateX }}
+      transition={{ ease: "linear", duration, repeat: Infinity }}
+    >
+      {[...icons, ...icons].map((Logo, i) => (
+        <div key={i} className="flex-shrink-0 px-16">
+          <Logo className="text-white/5 text-9xl" />
         </div>
+      ))}
+    </motion.div>
+  );
+};
+
+export default function IntroductionPage() {
+  const scrollToDataset = () => {
+    const target = document.getElementById("dataset-overview");
+    if (target) target.scrollIntoView({ behavior: "smooth" });
+  };
+
+
+  /* Scroll Animation Hook for Timeline Items */
+  const TimelineItem = ({
+    children,
+    side = "start",
+  }: {
+    children: React.ReactNode;
+    side: "start" | "end";
+  }) => {
+    const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.2 });
+
+    return (
+      <motion.li
+        ref={ref}
+        initial={{ opacity: 0, x: side === "start" ? -40 : 40 }}
+        animate={inView ? { opacity: 1, x: 0 } : {}}
+        transition={{ duration: 0.6 }}
+      >
+        {children}
+      </motion.li>
+    );
+  };
+
+  return (
+    <div
+      className="
+        relative
+        min-h-screen 
+        text-base-content 
+        pt-16 
+        text-white
+        overflow-x-hidden
+        bg-gradient-to-b from-[#1a0d26] via-[#2a1a3a] to-[#1a0d26]
+      "
+    >
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <Aurora
+          blend={1.0}
+          amplitude={1.2}
+          speed={2}
+        />
       </div>
 
-      {/* 2. Main Content Wrapper */}
-      <main className="container mx-auto p-4 md:p-8">
+      {/* HERO SECTION */}
+      <section
+        className="
+          relative 
+          flex flex-col-reverse md:flex-row 
+          items-center justify-center 
+          min-h-[90vh] px-8 
+          text-white
+          overflow-hidden
+        "
+      >
+        <div className="absolute inset-0 z-5 pointer-events-none opacity-50 flex flex-col justify-center gap-20">
+          <LogoTicker icons={logos1} duration={60} direction="left" />
+          <LogoTicker icons={logos2} duration={60} direction="right" />
+        </div>
+        
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.9 }}
+          className="z-10 max-w-2xl text-center md:text-center space-y-6"
+        >
+          <h1 className="text-5xl md:text-7xl font-extrabold leading-tight text-teal-400">
+            Students’ Social Media Addiction
+          </h1>
 
-        {/* 3. Introduction Section (from Mockup 1) */}
-        <section id="intro" className="mb-12 lg:mb-16 p-6 md:p-8 bg-base-100 rounded-2xl shadow-xl">
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-center">
-            
-            {/* Left Col: Text */}
-            <div className="lg:col-span-3">
-              <h2 className="text-4xl font-bold mb-4 text-accent" style={titleFont}>
-                Introduction
-              </h2>
-              <div className="space-y-4 text-base-content/90">
-                <p>
-                  The Student Social Media & Relationships dataset contains anonymized records of students’ social‐media behaviors and related life outcomes. It spans multiple countries and academic levels, focusing on key dimensions such as usage intensity, platform preferences, and relationship dynamics.
-                </p>
-                <p>
-                  Each row represents one student’s survey response, offering a cross‐sectional snapshot suitable for statistical analysis and machine‐learning applications.
-                </p>
-              </div>
-            </div>
-            
-            {/* Right Col: Illustration */}
-            <div className="lg:col-span-2 flex items-center justify-center p-4">
-              <IntroIllustration />
-            </div>
-          </div>
-        </section>
+          <p className="text-lg md:text-xl leading-relaxed opacity-90">
+            The <span className="font-semibold">Student Social Media & Relationships</span> dataset explores
+            student behaviors, focusing on social media usage patterns, academic performance,
+            and relationship dynamics across multiple countries.
+          </p>
 
-        {/* 4. Data Section (from Mockup 2) */}
-        <section id="data" className="mb-12 lg:mb-16 p-6 md:p-8 bg-base-100 rounded-2xl shadow-xl">
-          <h2 className="text-4xl font-bold mb-8 text-center" style={titleFont}>
-            Data
+          <p className="text-lg md:text-xl leading-relaxed opacity-90">
+            Each record represents a student’s self-reported experience, providing key insights for
+            research, visualization, and predictive modeling.
+          </p>
+
+          <button onClick={scrollToDataset} className="btn btn-neutral mt-4">
+            Explore Dataset ↓
+          </button>
+        </motion.div>
+
+      </section>
+
+      {/* MAIN CONTENT (All components are still here) */}
+      <main className="container mx-auto px-6 py-12 space-y-16">
+      <div id="dataset-overview"className="divider before:bg-gray-600 after:bg-gray-600"></div>
+        {/* DATASET OVERVIEW */}
+        <section className="space-y-8">
+          <h2 className="text-4xl font-semibold text-center text-teal-300">
+            Dataset Overview
           </h2>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12">
-            
-            {/* Left Col: Details (Scope, Methodology, etc.) */}
-            <div className="lg:col-span-2 space-y-8">
-              <div>
-                <h3 className="text-2xl font-semibold mb-3 text-primary">Scope & Coverage</h3>
-                <ul className="list-disc list-outside pl-5 space-y-2 text-base-content/90">
-                  <li><strong>Population:</strong> Students aged 16–25 (high school, undergraduate, graduate).</li>
-                  <li><strong>Geography:</strong> Multi‐country coverage (e.g., Bangladesh, India, USA, UK, Canada, etc.).</li>
-                  <li><strong>Timeframe:</strong> One-time online survey in Q1 2025.</li>
-                  <li><strong>Volume:</strong> Configurable sample sizes (100, 500, 1,000 records).</li>
-                </ul>
-              </div>
-              
-              <div className="divider lg:hidden"></div>
 
-              <div>
-                <h3 className="text-2xl font-semibold mb-3 text-primary">Data Collection & Methodology</h3>
-                <ul className="list-disc list-outside pl-5 space-y-2 text-base-content/90">
-                  <li><strong>Survey Design:</strong> Adapted from validated scales (e.g., Bergen Social Media Addiction Scale).</li>
-                  <li><strong>Recruitment:</strong> University mailing lists and social-media platforms.</li>
-                </ul>
-              </div>
-              
-              <div className="divider lg:hidden"></div>
+          {/* Timeline */}
+          <div  className="flex justify-center">
+            <ul className="timeline timeline-snap-icon timeline-vertical w-full max-w-7xl">
 
-              <div>
-                <h3 className="text-2xl font-semibold mb-3 text-primary">Data Quality Controls</h3>
-                <ul className="list-disc list-outside pl-5 space-y-2 text-base-content/90">
-                  <li><strong>Validation:</strong> Mandatory fields and range checks (e.g., usage hours 0–24).</li>
-                  <li><strong>De‐duplication:</strong> Removal of duplicates via unique `Student_ID`.</li>
-                  <li><strong>Anonymization:</strong> No personally identifiable information (PII) collected.</li>
-                </ul>
-              </div>
-            </div>
+              {/* Scope & Coverage */}
+              <TimelineItem side="end">
+                <div className="timeline-middle">
+                  <div className="bg-teal-500 rounded-full w-4 h-4"></div>
+                </div>
+                <div className="timeline-end mb-10 md:text-start">
+                  <div className="text-xl font-black text-teal-500">Scope & Coverage</div>
+                  <p className="mt-2">
+                    <b>Population:</b> Students aged 16–25.<br />
+                    <b>Geography:</b> Bangladesh, India, USA, UK, Canada, and more.<br />
+                    <b>Timeframe:</b> Q1 2025 online survey.<br />
+                    <b>Volume:</b> 705 entries after cleaning.
+                  </p>
+                </div>
+                <hr />
+              </TimelineItem>
 
-            {/* Right Col: Key Variables Table */}
-            <div className="lg:col-span-3">
-              <h3 className="text-2xl font-semibold mb-4 text-primary">Key Variables</h3>
-              <div className="overflow-x-auto rounded-lg shadow-md border border-base-300">
-                <table className="table table-zebra w-full">
-                  {/* Table Head */}
-                  <thead className="bg-base-300">
-                    <tr>
-                      <th className="py-3 px-4 font-bold text-base text-base-content">Variable</th>
-                      <th className="py-3 px-4 font-bold text-base text-base-content">Type</th>
-                      <th className="py-3 px-4 font-bold text-base text-base-content">Description</th>
+              {/* Methodology */}
+              <TimelineItem side="start">
+                <hr />
+                <div className="timeline-middle">
+                  <div className="bg-teal-500 rounded-full w-4 h-4"></div>
+                </div>
+                <div className="timeline-start md:mb-10 md:text-end">
+                  <div className="text-xl font-black text-teal-500">Data Collection & Methodology</div>
+                  <p className="mt-2">
+                    - Based on validated instruments like the Bergen Social Media Addiction Scale.<br />
+                    - Recruited via universities and social media.
+                  </p>
+                </div>
+                <hr />
+              </TimelineItem>
+
+              {/* Data Quality */}
+              <TimelineItem side="end">
+                <hr />
+                <div className="timeline-middle">
+                  <div className="bg-teal-500 rounded-full w-4 h-4"></div>
+                </div>
+                <div className="timeline-end mb-10 md:text-start">
+                  <div className="text-xl font-black text-teal-500">Data Quality Controls</div>
+                  <p className="mt-2">
+                    - Range validation (0–24 hours/day).<br />
+                    - De-duplication via Student_ID.<br />
+                    - Strict anonymization (no identifiers).
+                  </p>
+                </div>
+              </TimelineItem>
+
+            </ul>
+          </div>
+      <div id="dataset-overview"className="divider before:bg-gray-600 after:bg-gray-600"></div>
+
+          {/* KEY VARIABLES TABLE */}
+          <div className="lg:col-span-3">
+            {/* ... (Table component) ... */}
+            <h2 className="text-4xl font-semibold text-center text-teal-300 mb-6">
+              Key Variables
+            </h2>
+
+            <div className="overflow-x-auto rounded-xl border border-gray-700 shadow-xl bg-[#3b254f]/60">
+              <table className="table w-full text-white">
+                <thead className="bg-[#4a2f52]/70 text-teal-200">
+                  <tr>
+                    <th className="py-3 px-4 text-left font-semibold">Variable</th>
+                    <th className="py-3 px-4 text-left font-semibold">Type</th>
+                    <th className="py-3 px-4 text-left font-semibold">Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {keyVariables.map((item) => (
+                    <tr key={item.variable} className="hover:bg-[#00000022]">
+                      <td className="py-3 px-4 font-mono text-sm text-teal-300">{item.variable}</td>
+                      <td className="py-3 px-4 text-sm">
+                        <span className="badge badge-outline text-teal-200 border-teal-300">{item.type}</span>
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-200">{item.description}</td>
                     </tr>
-                  </thead>
-                  {/* Table Body */}
-                  <tbody>
-                    {keyVariables.map((item) => (
-                      <tr key={item.variable} className="hover">
-                        <td className="py-3 px-4 font-mono text-sm font-medium text-secondary">{item.variable}</td>
-                        <td className="py-3 px-4"><span className="badge badge-ghost badge-sm">{item.type}</span></td>
-                        <td className="py-3 px-4 text-sm text-base-content/90">{item.description}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
+
         </section>
+      <div id="dataset-overview"className="divider before:bg-gray-600 after:bg-gray-600"></div>
 
-        {/* 5. Analysis & Limitations Section (from Context) */}
-        <section id="analysis" className="mb-12 lg:mb-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            
-            {/* Potential Analyses Card */}
-            <div className="card bg-base-100 shadow-lg transition-all hover:shadow-xl">
-              <div className="card-body">
-                <h3 className="card-title text-2xl font-semibold">Potential Analyses 🔬</h3>
-                <ul className="list-disc list-outside pl-5 space-y-2 mt-4 text-base-content/90">
-                  <li><strong>Correlation Studies:</strong> Examine associations between daily usage, mental‐health score, and sleep hours.</li>
-                  <li><strong>Predictive Modeling:</strong> Build classifiers to predict relationship conflicts based on usage patterns.</li>
-                  <li><strong>Clustering:</strong> Identify user segments (e.g., “high‐usage high‐stress”) across countries.</li>
-                </ul>
-              </div>
-            </div>
+        {/* LIMITATIONS */}
+        <h2 className="text-4xl font-semibold text-center text-teal-500">
+          Limitations
+        </h2>
 
-            {/* Limitations Card */}
-            <div className="card bg-warning text-warning-content shadow-lg transition-all hover:shadow-xl">
-              <div className="card-body">
-                <h3 className="card-title text-2xl font-semibold">Limitations ⚠️</h3>
-                <ul className="list-disc list-outside pl-5 space-y-2 mt-4">
-                  <li><strong>Self‐Report Bias:</strong> Measures are self-reported and may be subject to social‐desirability effects.</li>
-                  <li><strong>Cross‐Sectional Design:</strong> One-time survey prevents any causal inference.</li>
-                  <li><strong>Sampling Variability:</strong> Online recruitment may underrepresent students with limited internet access.</li>
-                </ul>
-              </div>
-            </div>
+        <section>
+        <details className="collapse collapse-arrow bg-[#3b254f]/60 border border-gray-700 shadow-lg">
+  <summary className="collapse-title font-semibold text-teal-300">Dataset Limitations</summary>
+  <div className="collapse-content text-md">- Self-report bias may affect accuracy.<br />- Cross-sectional — no causal inference.</div>
 
-          </div>
+</details>
         </section>
 
       </main>
 
-      {/* 6. Footer */}
-      <footer className="footer footer-center p-6 bg-base-300 text-base-content rounded-t-lg">
-        <div>
-          <p>Copyright © 2025 - All rights reserved. Dataset documentation for "Students' Social Media Addiction".</p>
-        </div>
+      {/* FOOTER */}
+      <footer className="footer footer-center py-8 bg-[#2a1a3a] text-gray-300 border-t border-gray-700">
+        {/* ... (Footer component) ... */}
+        <p className="text-sm">
+          © 2025 — Dataset documentation for <span className="font-medium">Students' Social Media Addiction</span>
+        </p>
       </footer>
-      
     </div>
   );
 }
-
-export default IntroductionPage;

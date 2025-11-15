@@ -1,72 +1,53 @@
 import { NavLink, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 interface NavbarProps {
-  isDarkMode?: boolean; // optional flag
+  isDarkMode?: boolean;
 }
 
 function Navbar({ isDarkMode = false }: NavbarProps) {
   const location = useLocation();
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setIsScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const navLinkClass = (path: string) => {
     const isActive = location.pathname === path;
-    return `btn btn-ghost ${
+    return `btn btn-ghost hover:bg-transparent ${ 
       isActive
-        ? isDarkMode
-          ? "text-teal-300 font-bold"
-          : "text-primary font-bold"
-        : ""
+          ? "text-teal-400 font-bold"
+        : "text-white"
     }`;
   };
 
   return (
     <div
-      className={`navbar shadow-sm fixed top-0 left-0 right-0 z-20 transition-colors duration-300 ${
-        isDarkMode ? "bg-base-100/0. text-white" : "bg-base-200 text-black"
-      }`}
+      className={`
+        fixed top-4 left-1/2 -translate-x-1/2 z-30 shadow-lg transition-all duration-300
+        rounded-2xl backdrop-blur-xl
+        ${isScrolled ? "bg-black/40" : "bg-black/20"}
+        ${isDarkMode ? "text-white" : "text-white"}
+      `}
     >
-      <div className="navbar-start">
-        <NavLink to="/" className="btn btn-ghost text-xl">
-          Students' Social Media Addiction
-        </NavLink>
-      </div>
+      <div className="navbar px-4 py-2">
+        <div className="navbar-start">
+        </div>
 
-      <div className="navbar-center hidden lg:flex">
-        <ul className="menu menu-horizontal px-1">
-          <li>
-            <NavLink to="/" className={() => navLinkClass("/")}>
-              Introduction
-            </NavLink>
-          </li>
-          <li>
-            <NavLink
-              to="/interesting-finds"
-              className={() => navLinkClass("/interesting-finds")}
-            >
-              Interesting Finds
-            </NavLink>
-          </li>
-          <li>
-            <NavLink
-              to="/analyze-data"
-              className={() => navLinkClass("/analyze-data")}
-            >
-              Analyze Data
-            </NavLink>
-          </li>
-          <li>
-            <NavLink
-              to="/explore-room"
-              className={() => navLinkClass("/explore-room")}
-            >
-              Explore Room
-            </NavLink>
-          </li>
-        </ul>
-      </div>
+        <div className="navbar-center hidden lg:flex">
+          <ul className="menu menu-horizontal px-1">
+            <li><NavLink to="/" className={() => navLinkClass("/")}>Introduction</NavLink></li>
+            <li><NavLink to="/interesting-finds" className={() => navLinkClass("/interesting-finds")}>Interesting Finds</NavLink></li>
+            <li><NavLink to="/analyze-data" className={() => navLinkClass("/analyze-data")}>Analyze Data</NavLink></li>
+            <li><NavLink to="/explore-room" className={() => navLinkClass("/explore-room")}>Explore Room</NavLink></li>
+          </ul>
+        </div>
 
-      <div className="navbar-end">
-        <div className="flex items-center gap-4 pr-4">
-          {/* Optional buttons/icons */}
+        <div className="navbar-end">
+          <div className="flex items-center gap-4 pr-2"></div>
         </div>
       </div>
     </div>
