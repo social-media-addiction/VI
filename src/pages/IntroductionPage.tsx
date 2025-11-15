@@ -119,7 +119,7 @@ export default function IntroductionPage() {
         <Aurora
           blend={1.0}
           amplitude={1.2}
-          speed={2}
+          speed={1}
         />
       </div>
 
