@@ -51,9 +51,14 @@ const ScatterGraph: React.FC<ScatterGraphProps> = ({ data, xLabel = 'X Axis', yL
     if (dimensions.width === 0 || dimensions.height === 0) return;
 
     const svg = d3.select(svgRef.current);
-    svg.selectAll('*').remove();
-
-    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+    
+    // Only create the main group once
+    let g = svg.select<SVGGElement>('g.main-group');
+    if (g.empty()) {
+      g = svg.append('g')
+        .attr('class', 'main-group')
+        .attr('transform', `translate(${margin.left},${margin.top})`);
+    }
 
     const xMax = d3.max(data, d => d.x) || 0;
     const yMax = d3.max(data, d => d.y) || 0;
@@ -66,16 +71,19 @@ const ScatterGraph: React.FC<ScatterGraphProps> = ({ data, xLabel = 'X Axis', yL
       .domain([0, yMax * 1.1])
       .range([chartHeight, 0]);
 
-    // X Axis
-    g.append('g')
+    // Update or create axes
+    const xAxisG = g.selectAll<SVGGElement, unknown>('.x-axis').data([null]);
+    const xAxisEnter = xAxisG.enter().append('g').attr('class', 'x-axis');
+    xAxisG.merge(xAxisEnter)
       .attr('transform', `translate(0,${chartHeight})`)
       .call(d3.axisBottom(xScale))
       .selectAll("text")
       .attr("fill", "white")
       .attr("font-size", 11);
 
-    // Y Axis
-    g.append('g')
+    const yAxisG = g.selectAll<SVGGElement, unknown>('.y-axis').data([null]);
+    const yAxisEnter = yAxisG.enter().append('g').attr('class', 'y-axis');
+    yAxisG.merge(yAxisEnter)
       .call(d3.axisLeft(yScale))
       .selectAll("text")
       .attr("fill", "white")
@@ -85,40 +93,69 @@ const ScatterGraph: React.FC<ScatterGraphProps> = ({ data, xLabel = 'X Axis', yL
     g.selectAll(".domain, .tick line")
       .attr("stroke", "rgba(255,255,255,0.3)");
 
-    // X Axis Label
-    g.append('text')
+    // Update or create X axis label
+    const xLabelG = g.selectAll<SVGTextElement, unknown>('.x-label').data([null]);
+    xLabelG.enter().append('text')
+      .attr('class', 'x-label')
+      .attr('text-anchor', 'middle')
+      .attr('fill', 'white')
+      .attr('font-size', 12)
+      .attr('font-weight', '500')
+      .merge(xLabelG)
       .attr('x', chartWidth / 2)
       .attr('y', chartHeight + 45)
-      .attr('text-anchor', 'middle')
-      .attr('fill', 'white')
-      .attr('font-size', 12)
-      .attr('font-weight', '500')
       .text(xLabel);
 
-    // Y Axis Label
-    g.append('text')
+    // Update or create Y axis label
+    const yLabelG = g.selectAll<SVGTextElement, unknown>('.y-label').data([null]);
+    yLabelG.enter().append('text')
+      .attr('class', 'y-label')
       .attr('transform', 'rotate(-90)')
-      .attr('x', -chartHeight / 2)
-      .attr('y', -45)
       .attr('text-anchor', 'middle')
       .attr('fill', 'white')
       .attr('font-size', 12)
       .attr('font-weight', '500')
+      .merge(yLabelG)
+      .attr('x', -chartHeight / 2)
+      .attr('y', -45)
       .text(yLabel);
 
-    // Dots
-    g.selectAll('.dot')
-      .data(data)
-      .enter().append('circle')
+    // Dots with animations
+    const dots = g.selectAll<SVGCircleElement, ScatterData>('.dot')
+      .data(data, (_d, i) => i.toString());
+
+    // Exit animation
+    dots.exit()
+      .transition()
+      .duration(300)
+      .attr('r', 0)
+      .attr('opacity', 0)
+      .remove();
+
+    // Enter animation
+    const dotsEnter = dots.enter().append('circle')
       .attr('class', 'dot')
+      .attr('cx', d => xScale(d.x))
+      .attr('cy', d => yScale(d.y))
+      .attr('r', 0)
+      .attr('fill', color)
+      .attr('opacity', 0)
+      .attr('stroke', '#1f2937')
+      .attr('stroke-width', 1)
+      .style('cursor', 'pointer');
+
+    // Merge and update - smoothly transition to new positions
+    dots.merge(dotsEnter)
+      .transition()
+      .duration(500)
       .attr('cx', d => xScale(d.x))
       .attr('cy', d => yScale(d.y))
       .attr('r', 5)
       .attr('fill', color)
-      .attr('opacity', 0.7)
-      .attr('stroke', '#1f2937')
-      .attr('stroke-width', 1)
-      .style('cursor', 'pointer')
+      .attr('opacity', 0.7);
+
+    // Add hover events
+    g.selectAll<SVGCircleElement, ScatterData>('.dot')
       .on('mouseover', function(_event, d) {
         d3.select(this)
           .transition()

@@ -54,9 +54,8 @@ const LineChart: React.FC<LineChartProps> = ({ data, xLabel = '', yLabel = '', c
 
     const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
-    // Determine if x is numeric or categorical
     const isNumeric = typeof data[0].x === 'number';
-    
+
     let xScale: any;
     if (isNumeric) {
       const xExtent = d3.extent(data, d => d.x as number) as [number, number];
@@ -91,9 +90,29 @@ const LineChart: React.FC<LineChartProps> = ({ data, xLabel = '', yLabel = '', c
       .attr("fill", "white")
       .attr("font-size", 11);
 
-    // Axis styling
     g.selectAll(".domain, .tick line")
       .attr("stroke", "rgba(255,255,255,0.3)");
+
+    // X Axis Label
+    g.append('text')
+      .attr('x', chartWidth / 2)
+      .attr('y', chartHeight + 45)
+      .attr('text-anchor', 'middle')
+      .attr('fill', 'white')
+      .attr('font-size', 12)
+      .attr('font-weight', '500')
+      .text(xLabel);
+
+    // Y Axis Label
+    g.append('text')
+      .attr('transform', 'rotate(-90)')
+      .attr('x', -chartHeight / 2)
+      .attr('y', -45)
+      .attr('text-anchor', 'middle')
+      .attr('fill', 'white')
+      .attr('font-size', 12)
+      .attr('font-weight', '500')
+      .text(yLabel);
 
     // Line generator
     const line = d3.line<LineChartData>()
@@ -167,27 +186,32 @@ const LineChart: React.FC<LineChartProps> = ({ data, xLabel = '', yLabel = '', c
         g.selectAll('.tooltip').remove();
       });
 
-    // Labels
-    if (xLabel) {
-      g.append('text')
-        .attr('x', chartWidth / 2)
-        .attr('y', chartHeight + 45)
-        .attr('text-anchor', 'middle')
-        .attr('fill', 'white')
-        .attr('font-size', 12)
-        .text(xLabel);
-    }
+    // Update or create X axis label
+    const xLabelG = g.selectAll<SVGTextElement, unknown>('.x-label').data([null]);
+    xLabelG.enter().append('text')
+      .attr('class', 'x-label')
+      .attr('text-anchor', 'middle')
+      .attr('fill', 'white')
+      .attr('font-size', 12)
+      .attr('font-weight', '500')
+      .merge(xLabelG)
+      .attr('x', chartWidth / 2)
+      .attr('y', chartHeight + 45)
+      .text(xLabel);
 
-    if (yLabel) {
-      g.append('text')
-        .attr('transform', 'rotate(-90)')
-        .attr('x', -chartHeight / 2)
-        .attr('y', -45)
-        .attr('text-anchor', 'middle')
-        .attr('fill', 'white')
-        .attr('font-size', 12)
-        .text(yLabel);
-    }
+    // Update or create Y axis label
+    const yLabelG = g.selectAll<SVGTextElement, unknown>('.y-label').data([null]);
+    yLabelG.enter().append('text')
+      .attr('class', 'y-label')
+      .attr('transform', 'rotate(-90)')
+      .attr('text-anchor', 'middle')
+      .attr('fill', 'white')
+      .attr('font-size', 12)
+      .attr('font-weight', '500')
+      .merge(yLabelG)
+      .attr('x', -chartHeight / 2)
+      .attr('y', -45)
+      .text(yLabel);
 
   }, [data, dimensions, color, xLabel, yLabel]);
 

@@ -75,35 +75,51 @@ const BarChart: React.FC<BarChartProps> = ({ data, orientation = 'vertical', xLa
     if (dimensions.width === 0 || dimensions.height === 0) return;
 
     const svg = d3.select(svgRef.current);
-    svg.selectAll('*').remove(); // Clear previous chart elements
-
-    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+    
+    // Only create the main group once
+    let g = svg.select<SVGGElement>('g.main-group');
+    if (g.empty()) {
+      g = svg.append('g')
+        .attr('class', 'main-group')
+        .attr('transform', `translate(${margin.left},${margin.top})`);
+    }
 
     // Color scale for vibrant colors
     const colorScale = d3.scaleSequential()
       .domain([0, data.length - 1])
       .interpolator(d3.interpolateRgb('#ec4899', '#f97316')); // Pink to Orange
 
+    // Update or create axes
     if (orientation === 'vertical') {
-      g.append('g')
+      const xAxisG = g.selectAll<SVGGElement, unknown>('.x-axis').data([null]);
+      const xAxisEnter = xAxisG.enter().append('g').attr('class', 'x-axis');
+      xAxisG.merge(xAxisEnter)
         .attr('transform', `translate(0,${chartHeight})`)
         .call(d3.axisBottom(xScale as d3.ScaleBand<string>))
         .selectAll("text")
         .attr("fill", "white")
         .attr("font-size", 11);
-      g.append('g')
+
+      const yAxisG = g.selectAll<SVGGElement, unknown>('.y-axis').data([null]);
+      const yAxisEnter = yAxisG.enter().append('g').attr('class', 'y-axis');
+      yAxisG.merge(yAxisEnter)
         .call(d3.axisLeft(yScale as d3.ScaleLinear<number, number>))
         .selectAll("text")
         .attr("fill", "white")
         .attr("font-size", 11);
     } else {
-      g.append('g')
+      const xAxisG = g.selectAll<SVGGElement, unknown>('.x-axis').data([null]);
+      const xAxisEnter = xAxisG.enter().append('g').attr('class', 'x-axis');
+      xAxisG.merge(xAxisEnter)
         .attr('transform', `translate(0,${chartHeight})`)
         .call(d3.axisBottom(xScale as d3.ScaleLinear<number, number>))
         .selectAll("text")
         .attr("fill", "white")
         .attr("font-size", 11);
-      g.append('g')
+
+      const yAxisG = g.selectAll<SVGGElement, unknown>('.y-axis').data([null]);
+      const yAxisEnter = yAxisG.enter().append('g').attr('class', 'y-axis');
+      yAxisG.merge(yAxisEnter)
         .call(d3.axisLeft(yScale as d3.ScaleBand<string>))
         .selectAll("text")
         .attr("fill", "white")
@@ -113,42 +129,74 @@ const BarChart: React.FC<BarChartProps> = ({ data, orientation = 'vertical', xLa
     g.selectAll(".domain, .tick line")
       .attr("stroke", "rgba(255,255,255,0.3)");
 
-    // Axis Labels
+    // Update or create axis labels
     if (xLabel) {
-      g.append('text')
-        .attr('x', chartWidth / 2)
-        .attr('y', chartHeight + 45)
+      const xLabelG = g.selectAll<SVGTextElement, unknown>('.x-label').data([null]);
+      xLabelG.enter().append('text')
+        .attr('class', 'x-label')
         .attr('text-anchor', 'middle')
         .attr('fill', 'white')
         .attr('font-size', 12)
         .attr('font-weight', '500')
+        .merge(xLabelG)
+        .attr('x', chartWidth / 2)
+        .attr('y', chartHeight + 45)
         .text(xLabel);
     }
 
     if (yLabel) {
-      g.append('text')
+      const yLabelG = g.selectAll<SVGTextElement, unknown>('.y-label').data([null]);
+      yLabelG.enter().append('text')
+        .attr('class', 'y-label')
         .attr('transform', 'rotate(-90)')
-        .attr('x', -chartHeight / 2)
-        .attr('y', -45)
         .attr('text-anchor', 'middle')
         .attr('fill', 'white')
         .attr('font-size', 12)
         .attr('font-weight', '500')
+        .merge(yLabelG)
+        .attr('x', -chartHeight / 2)
+        .attr('y', -45)
         .text(yLabel);
     }
 
-    g.selectAll('.bar')
-      .data(data)
-      .enter().append('rect')
+    // Bars with animations
+    const bars = g.selectAll<SVGRectElement, BarChartData>('.bar')
+      .data(data, d => d.label);
+
+    // Exit animation
+    bars.exit()
+      .transition()
+      .duration(300)
+      .attr('opacity', 0)
+      .attr('height', 0)
+      .attr('y', chartHeight)
+      .remove();
+
+    // Enter animation
+    const barsEnter = bars.enter().append('rect')
       .attr('class', 'bar')
+      .attr('x', d => orientation === 'vertical' ? (xScale as d3.ScaleBand<string>)(d.label)! : xScale(0))
+      .attr('y', d => orientation === 'vertical' ? chartHeight : (yScale as d3.ScaleBand<string>)(d.label)!)
+      .attr('width', d => orientation === 'vertical' ? (xScale as d3.ScaleBand<string>).bandwidth() : 0)
+      .attr('height', 0)
+      .attr('fill', (_d, i) => colorScale(i))
+      .attr('stroke', '#1f2937')
+      .attr('stroke-width', 1)
+      .attr('opacity', 0)
+      .style('cursor', 'pointer');
+
+    // Merge and update
+    const allBars = bars.merge(barsEnter)
+      .transition()
+      .duration(500)
       .attr('x', d => orientation === 'vertical' ? (xScale as d3.ScaleBand<string>)(d.label)! : xScale(0))
       .attr('y', d => orientation === 'vertical' ? (yScale as d3.ScaleLinear<number, number>)(d.value) : (yScale as d3.ScaleBand<string>)(d.label)!)
       .attr('width', d => orientation === 'vertical' ? (xScale as d3.ScaleBand<string>).bandwidth() : (xScale as d3.ScaleLinear<number, number>)(d.value))
       .attr('height', d => orientation === 'vertical' ? chartHeight - (yScale as d3.ScaleLinear<number, number>)(d.value) : (yScale as d3.ScaleBand<string>).bandwidth())
-      .attr('fill', (_d, i) => colorScale(i))
-      .attr('stroke', '#1f2937')
-      .attr('stroke-width', 1)
-      .style('cursor', 'pointer')
+      .attr('opacity', 1);
+
+    // Add hover events to all bars
+    g.selectAll<SVGRectElement, BarChartData>('.bar')
       .on('mouseover', function(_event, d) {
         d3.select(this)
           .transition()
