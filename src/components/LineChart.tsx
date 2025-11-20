@@ -120,11 +120,51 @@ const LineChart: React.FC<LineChartProps> = ({ data, xLabel = '', yLabel = '', c
       .attr('fill', color)
       .attr('stroke', '#1f2937')
       .attr('stroke-width', 2)
-      .on('mouseover', function() {
-        d3.select(this).attr('r', 7);
+      .style('cursor', 'pointer')
+      .on('mouseover', function(_event, d) {
+        d3.select(this)
+          .transition()
+          .duration(200)
+          .attr('r', 7);
+        
+        // Show tooltip
+        const dotX = isNumeric ? xScale(d.x as number) : xScale(String(d.x))!;
+        const dotY = yScale(d.y) - 15;
+        
+        g.append('g')
+          .attr('class', 'tooltip')
+          .attr('transform', `translate(${dotX},${dotY})`);
+        
+        const tooltip = g.select('.tooltip');
+        
+        // Background
+        tooltip.append('rect')
+          .attr('x', -30)
+          .attr('y', -30)
+          .attr('width', 60)
+          .attr('height', 35)
+          .attr('rx', 5)
+          .attr('fill', 'rgba(31, 41, 55, 0.95)')
+          .attr('stroke', '#69b3a2')
+          .attr('stroke-width', 2);
+        
+        // Y value
+        tooltip.append('text')
+          .attr('text-anchor', 'middle')
+          .attr('y', -5)
+          .attr('fill', '#69b3a2')
+          .attr('font-size', 14)
+          .attr('font-weight', 'bold')
+          .text(d.y.toFixed(1));
       })
       .on('mouseout', function() {
-        d3.select(this).attr('r', 4);
+        d3.select(this)
+          .transition()
+          .duration(200)
+          .attr('r', 4);
+        
+        // Remove tooltip
+        g.selectAll('.tooltip').remove();
       });
 
     // Labels

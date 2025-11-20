@@ -90,12 +90,45 @@ const DonutChart: React.FC<DonutChartProps> = ({ data, centerText }) => {
           .transition()
           .duration(200)
           .attr('d', arcHover(d) as string);
+        
+        // Show tooltip
+        const [x, y] = arcHover.centroid(d);
+        const percentage = ((d.data.value / d3.sum(data, item => item.value)) * 100).toFixed(1);
+        
+        g.append('g')
+          .attr('class', 'tooltip')
+          .attr('transform', `translate(${x},${y})`);
+        
+        const tooltip = g.select('.tooltip');
+        
+        // Background
+        tooltip.append('rect')
+          .attr('x', -30)
+          .attr('y', -20)
+          .attr('width', 60)
+          .attr('height', 35)
+          .attr('rx', 5)
+          .attr('fill', 'rgba(31, 41, 55, 0.95)')
+          .attr('stroke', '#69b3a2')
+          .attr('stroke-width', 2);
+        
+        // Percentage
+        tooltip.append('text')
+          .attr('text-anchor', 'middle')
+          .attr('y', 5)
+          .attr('fill', '#69b3a2')
+          .attr('font-size', 16)
+          .attr('font-weight', 'bold')
+          .text(`${percentage}%`);
       })
       .on('mouseout', function(_event, d) {
         d3.select(this)
           .transition()
           .duration(200)
           .attr('d', arc(d) as string);
+        
+        // Remove tooltip
+        g.selectAll('.tooltip').remove();
       });
 
     // Center text

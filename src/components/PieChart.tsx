@@ -101,30 +101,21 @@ const PieChart: React.FC<PieChartProps> = ({ data }) => {
         
         // Background
         tooltip.append('rect')
-          .attr('x', -50)
-          .attr('y', -30)
-          .attr('width', 100)
-          .attr('height', 50)
+          .attr('x', -30)
+          .attr('y', -20)
+          .attr('width', 60)
+          .attr('height', 35)
           .attr('rx', 5)
           .attr('fill', 'rgba(31, 41, 55, 0.95)')
           .attr('stroke', '#69b3a2')
           .attr('stroke-width', 2);
         
-        // Label
-        tooltip.append('text')
-          .attr('text-anchor', 'middle')
-          .attr('y', -10)
-          .attr('fill', 'white')
-          .attr('font-size', 11)
-          .attr('font-weight', 'bold')
-          .text(d.data.label.length > 12 ? d.data.label.substring(0, 12) + '...' : d.data.label);
-        
         // Percentage
         tooltip.append('text')
           .attr('text-anchor', 'middle')
-          .attr('y', 10)
+          .attr('y', 5)
           .attr('fill', '#69b3a2')
-          .attr('font-size', 14)
+          .attr('font-size', 16)
           .attr('font-weight', 'bold')
           .text(`${percentage}%`);
       })

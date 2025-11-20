@@ -147,13 +147,63 @@ const BarChart: React.FC<BarChartProps> = ({ data, orientation = 'vertical', xLa
       .attr('height', d => orientation === 'vertical' ? chartHeight - (yScale as d3.ScaleLinear<number, number>)(d.value) : (yScale as d3.ScaleBand<string>).bandwidth())
       .attr('fill', (_d, i) => colorScale(i))
       .attr('stroke', '#1f2937')
-      .attr('stroke-width', 1);
+      .attr('stroke-width', 1)
+      .style('cursor', 'pointer')
+      .on('mouseover', function(_event, d) {
+        d3.select(this)
+          .transition()
+          .duration(200)
+          .attr('opacity', 0.8);
+        
+        // Show tooltip
+        const barX = orientation === 'vertical' 
+          ? (xScale as d3.ScaleBand<string>)(d.label)! + (xScale as d3.ScaleBand<string>).bandwidth() / 2
+          : (xScale as d3.ScaleLinear<number, number>)(d.value);
+        const barY = orientation === 'vertical' 
+          ? (yScale as d3.ScaleLinear<number, number>)(d.value) - 10
+          : (yScale as d3.ScaleBand<string>)(d.label)! + (yScale as d3.ScaleBand<string>).bandwidth() / 2;
+        
+        g.append('g')
+          .attr('class', 'tooltip')
+          .attr('transform', `translate(${barX},${barY})`);
+        
+        const tooltip = g.select('.tooltip');
+        
+        // Background
+        tooltip.append('rect')
+          .attr('x', -30)
+          .attr('y', -30)
+          .attr('width', 60)
+          .attr('height', 35)
+          .attr('rx', 5)
+          .attr('fill', 'rgba(31, 41, 55, 0.95)')
+          .attr('stroke', '#69b3a2')
+          .attr('stroke-width', 2);
+        
+        // Value
+        tooltip.append('text')
+          .attr('text-anchor', 'middle')
+          .attr('y', -5)
+          .attr('fill', '#69b3a2')
+          .attr('font-size', 16)
+          .attr('font-weight', 'bold')
+          .text(d.value);
+      })
+      .on('mouseout', function() {
+        d3.select(this)
+          .transition()
+          .duration(200)
+          .attr('opacity', 1);
+        
+        // Remove tooltip
+        g.selectAll('.tooltip').remove();
+      });
 
   }, [data, orientation, dimensions, xLabel, yLabel]);
 
   return (
-    <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
-      <svg ref={svgRef} width="100%" height="100%"></svg>
+    <div ref={containerRef} style={{ width: '100%', height: '100%', overflow: 'visible' }}>
+      <svg ref={svgRef} width="100%" height="100%" style={{ overflow: 'visible' }}></svg>
     </div>
   );
 };

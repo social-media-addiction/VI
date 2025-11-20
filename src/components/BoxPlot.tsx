@@ -114,7 +114,12 @@ const BoxPlot: React.FC<BoxPlotProps> = ({ data, yMax }) => {
       const boxWidth = x.bandwidth();
       const boxColor = colorScale(key) as string;
 
-      g.append('line')
+      // Create a group for this box
+      const boxGroup = g.append('g')
+        .attr('class', 'box-group')
+        .style('cursor', 'pointer');
+
+      boxGroup.append('line')
         .attr('x1', x(key)! + boxWidth / 2)
         .attr('x2', x(key)! + boxWidth / 2)
         .attr('y1', y(min))
@@ -122,7 +127,7 @@ const BoxPlot: React.FC<BoxPlotProps> = ({ data, yMax }) => {
         .attr('stroke', "rgba(255,255,255,0.5)")
         .attr('stroke-width', 2);
 
-      g.append('rect')
+      boxGroup.append('rect')
         .attr('x', x(key)!)
         .attr('y', y(q3))
         .attr('height', y(q1) - y(q3))
@@ -131,7 +136,7 @@ const BoxPlot: React.FC<BoxPlotProps> = ({ data, yMax }) => {
         .attr('stroke-width', 2)
         .style('fill', boxColor);
 
-      g.selectAll(`median-line-${key}`)
+      boxGroup.selectAll(`median-line-${key}`)
         .data([median])
         .enter()
         .append('line')
@@ -141,6 +146,54 @@ const BoxPlot: React.FC<BoxPlotProps> = ({ data, yMax }) => {
         .attr('y2', d => y(d))
         .attr('stroke', '#1f2937')
         .attr('stroke-width', 3);
+
+      // Add hover interactions
+      boxGroup
+        .on('mouseover', function() {
+          d3.select(this).select('rect')
+            .transition()
+            .duration(200)
+            .attr('opacity', 0.8);
+          
+          // Show tooltip
+          const boxX = x(key)! + boxWidth / 2;
+          const boxY = y(q3) - 10;
+          
+          g.append('g')
+            .attr('class', 'tooltip')
+            .attr('transform', `translate(${boxX},${boxY})`);
+          
+          const tooltip = g.select('.tooltip');
+          
+          // Background
+          tooltip.append('rect')
+            .attr('x', -35)
+            .attr('y', -30)
+            .attr('width', 70)
+            .attr('height', 35)
+            .attr('rx', 5)
+            .attr('fill', 'rgba(31, 41, 55, 0.95)')
+            .attr('stroke', '#69b3a2')
+            .attr('stroke-width', 2);
+          
+          // Median value
+          tooltip.append('text')
+            .attr('text-anchor', 'middle')
+            .attr('y', -5)
+            .attr('fill', '#69b3a2')
+            .attr('font-size', 14)
+            .attr('font-weight', 'bold')
+            .text(median.toFixed(1));
+        })
+        .on('mouseout', function() {
+          d3.select(this).select('rect')
+            .transition()
+            .duration(200)
+            .attr('opacity', 1);
+          
+          // Remove tooltip
+          g.selectAll('.tooltip').remove();
+        });
     });
 
   }, [data, yMax, dimensions]); // Re-run effect when dimensions change
