@@ -13,7 +13,8 @@ import WorldMap from "../components/WorldMap";
 import FilterSidebar from "../components/FilterSideBar";
 import SpiderChart, { SpiderChartSeries } from "../components/SpiderChart";
 import { Clock, GraduationCap, Users, Heart, Zap, BookOpen, Globe, Angry, Brain, Bed, ArrowDownRight } from "lucide-react";
-import { FaInstagram } from "react-icons/fa";
+import { FaInstagram, FaTwitter, FaTiktok, FaYoutube, FaFacebook, FaLinkedin, FaSnapchat, FaWhatsapp, FaWeixin, FaVk } from "react-icons/fa";
+import { SiLine, SiKakaotalk } from "react-icons/si";
 
 const AnalyzeData: React.FC = () => {
   const [originalData, setOriginalData] = useState<StudentRecord[]>([]);
@@ -40,18 +41,11 @@ const AnalyzeData: React.FC = () => {
   //   return Array.from(counts, ([label, value]) => ({ label, value }));
   // }, [data]);
 
-  const platformSpiderData: SpiderChartSeries[] = useMemo(() => {
+  const platformUsageBarData = useMemo((): BarChartData[] => {
     if (data.length === 0) return [];
-
-    // 1. Calculate the most used platforms
-    const platformCounts = d3.rollup(data, v => v.length, d => d.Most_Used_Platform);
-    const totalCount = d3.sum(Array.from(platformCounts.values()));
-    const platformPercentages = Array.from(platformCounts, ([platform, count]) => ({
-      axis: platform,
-      value: (count / totalCount) * 100
-    }));
-    // Wrap axis/value pairs into the expected series shape
-    return [{ name: 'Platforms', data: platformPercentages }];
+    const counts = d3.rollup(data, v => v.length, d => d.Most_Used_Platform);
+    return Array.from(counts, ([label, value]) => ({ label, value }))
+      .sort((a, b) => b.value - a.value);
   }, [data]);
 
   const usageVSAgeData = useMemo((): LineChartData[] => {
@@ -197,6 +191,21 @@ const AnalyzeData: React.FC = () => {
     'Geographic',
   ];
 
+  const platformIcons: Record<string, React.ReactNode> = {
+    "Instagram": <FaInstagram size={20} color="#E1306C" />,
+    "Twitter": <FaTwitter size={20} color="#1DA1F2" />,
+    "TikTok": <FaTiktok size={20} color="#000000" />,
+    "YouTube": <FaYoutube size={20} color="#FF0000" />,
+    "Facebook": <FaFacebook size={20} color="#1877F2" />,
+    "LinkedIn": <FaLinkedin size={20} color="#0A66C2" />,
+    "Snapchat": <FaSnapchat size={20} color="#FFFC00" />,
+    "LINE": <SiLine size={20} color="#00C300" />,
+    "KakaoTalk": <SiKakaotalk size={20} color="#FFEB00" />,
+    "VKontakte": <FaVk size={20} color="#4A76A8" />,
+    "WhatsApp": <FaWhatsapp size={20} color="#25D366" />,
+    "WeChat": <FaWeixin size={20} color="#07A119" />
+  };
+
   return (
     <div className="relative min-h-screen pt-24 text-white bg-gradient-to-b from-[#1a0d26] via-[#2a1a3a] to-[#1a0d26] overflow-hidden">
       <div className="absolute inset-0 z-0 pointer-events-none">
@@ -250,24 +259,19 @@ const AnalyzeData: React.FC = () => {
                 /* Platform Usage Tab */
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 
-                  <div className="h-[480px]">
+                  <div className="h-[480px] xl:col-span-2">
                     <ChartContainer title="Most Used Platforms" icon1={<FaInstagram size={18} />}>
                       <div className="h-[400px]">
-                        {/* <PieChart data={platformPieData} /> */}
-                        <SpiderChart data={platformSpiderData} config={{
-                          maxValue: 35,
-                          levels: 5,
-                          labelFactor: 1.2,
-                          opacityArea: 0.5,
-                          dotRadius: 6,
-                          strokeWidth: 2,
-                          roundStrokes: true,
-                          margin: { top: 70, right: 70, bottom: 70, left: 70 }
-                        }} />
+                        <BarChart 
+                          data={platformUsageBarData} 
+                          orientation="horizontal"
+                          xLabel="Number of Students"
+                          yLabel="Platform"
+                          iconMap={platformIcons}
+                        />
                       </div>
                     </ChartContainer>
                   </div>
-                  a pensar o que meter aqui (que caiba)
 
 
                   <div className="h-[480px] xl:col-span-2">
@@ -277,20 +281,7 @@ const AnalyzeData: React.FC = () => {
                           data={platformByMentalHealthData}
                           xLabel="Platform"
                           yLabel="Avg Mental Health Score"
-                        // colours={[
-                        //   "#E1306C", // Instagram
-                        //   "#1DA1F2", // Twitter
-                        //   "#000000", // TikTok
-                        //   "#FF0000", // YouTube
-                        //   "#1877F2", // Facebook
-                        //   "#0A66C2", // LinkedIn
-                        //   "#FFFC00", // Snapchat
-                        //   "#00C300", // LINE
-                        //   "#FFEB00", // KakaoTalk
-                        //   "#4A76A8", // VKontakte
-                        //   "#25D366", // WhatsApp
-                        //   "#07A119"  // WeChat
-                        // ]}                     
+                          iconMap={platformIcons}
                         />
                       </div>
                     </ChartContainer>

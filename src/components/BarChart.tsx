@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import * as d3 from 'd3';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 export interface BarChartData {
   label: string;
@@ -12,9 +13,10 @@ interface BarChartProps {
   xLabel?: string;
   yLabel?: string;
   colours?: string[];
+  iconMap?: Record<string, React.ReactNode>;
 }
 
-const BarChart: React.FC<BarChartProps> = ({ data, orientation = 'vertical', xLabel, yLabel, colours }) => {
+const BarChart: React.FC<BarChartProps> = ({ data, orientation = 'vertical', xLabel, yLabel, colours, iconMap }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -43,7 +45,14 @@ const BarChart: React.FC<BarChartProps> = ({ data, orientation = 'vertical', xLa
     };
   }, []);
 
-  const margin = { top: 20, right: 20, bottom: 60, left: 60 }; // Adjusted margins for labels
+
+
+  const margin = { 
+    top: 20, 
+    right: 20, 
+    bottom: 60, 
+    left: orientation === 'horizontal' ? 100 : 60 
+  };
   const chartWidth = dimensions.width - margin.left - margin.right;
   const chartHeight = dimensions.height - margin.top - margin.bottom;
 
@@ -83,6 +92,9 @@ const BarChart: React.FC<BarChartProps> = ({ data, orientation = 'vertical', xLa
       g = svg.append('g')
         .attr('class', 'main-group')
         .attr('transform', `translate(${margin.left},${margin.top})`);
+    } else {
+      // Update transform if margin changes
+      g.attr('transform', `translate(${margin.left},${margin.top})`);
     }
 
     // Color scale for vibrant colors
@@ -156,7 +168,7 @@ const BarChart: React.FC<BarChartProps> = ({ data, orientation = 'vertical', xLa
         .attr('font-weight', '500')
         .merge(yLabelG)
         .attr('x', -chartHeight / 2)
-        .attr('y', -45)
+        .attr('y', orientation === 'horizontal' ? -85 : -45)
         .text(yLabel);
     }
 
@@ -196,7 +208,7 @@ const BarChart: React.FC<BarChartProps> = ({ data, orientation = 'vertical', xLa
       .style('cursor', 'pointer');
 
     // Merge and update
-    const allBars = bars.merge(barsEnter)
+    bars.merge(barsEnter)
       .transition()
       .duration(500)
       .attr('x', d => orientation === 'vertical' ? (xScale as d3.ScaleBand<string>)(d.label)! : xScale(0))
@@ -204,6 +216,48 @@ const BarChart: React.FC<BarChartProps> = ({ data, orientation = 'vertical', xLa
       .attr('width', d => orientation === 'vertical' ? (xScale as d3.ScaleBand<string>).bandwidth() : (xScale as d3.ScaleLinear<number, number>)(d.value))
       .attr('height', d => orientation === 'vertical' ? chartHeight - (yScale as d3.ScaleLinear<number, number>)(d.value) : (yScale as d3.ScaleBand<string>).bandwidth())
       .attr('opacity', 1);
+
+    // Icons above bars
+    if (iconMap) {
+      const iconGroup = g.selectAll<SVGGElement, unknown>('.icon-group').data([null]);
+      const iconGroupEnter = iconGroup.enter().append('g').attr('class', 'icon-group');
+      const iconG = iconGroup.merge(iconGroupEnter);
+
+      const icons = iconG.selectAll<SVGForeignObjectElement, BarChartData>('.bar-icon')
+        .data(data, d => d.label);
+
+      icons.exit().remove();
+
+      const iconsEnter = icons.enter().append('foreignObject')
+        .attr('class', 'bar-icon')
+        .attr('width', 24)
+        .attr('height', 24)
+        .style('overflow', 'visible');
+
+      icons.merge(iconsEnter)
+        .each(function(d) {
+          if (iconMap[d.label]) {
+            const iconMarkup = renderToStaticMarkup(iconMap[d.label] as React.ReactElement);
+            d3.select(this).html(`<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));">${iconMarkup}</div>`);
+          }
+        })
+        .transition()
+        .duration(500)
+        .attr('x', d => {
+          if (orientation === 'vertical') {
+            return (xScale as d3.ScaleBand<string>)(d.label)! + (xScale as d3.ScaleBand<string>).bandwidth() / 2 - 12;
+          } else {
+            return (xScale as d3.ScaleLinear<number, number>)(d.value) + 5;
+          }
+        })
+        .attr('y', d => {
+          if (orientation === 'vertical') {
+            return (yScale as d3.ScaleLinear<number, number>)(d.value) - 30;
+          } else {
+            return (yScale as d3.ScaleBand<string>)(d.label)! + (yScale as d3.ScaleBand<string>).bandwidth() / 2 - 12;
+          }
+        });
+    }
 
     // Add hover events to all bars
     g.selectAll<SVGRectElement, BarChartData>('.bar')
@@ -257,7 +311,7 @@ const BarChart: React.FC<BarChartProps> = ({ data, orientation = 'vertical', xLa
         g.selectAll('.tooltip').remove();
       });
 
-  }, [data, orientation, dimensions, xLabel, yLabel]);
+  }, [data, orientation, dimensions, xLabel, yLabel, colours, iconMap]);
 
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%', overflow: 'visible' }}>
